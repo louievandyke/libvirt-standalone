@@ -1,0 +1,48 @@
+{
+    "Images": [
+        {
+            "Architecture": "x86_64",
+            "CreationDate": "2024-09-17T17:21:29.000Z",
+            "ImageId": "ami-050250504d7d538b4",
+            "ImageLocation": "999225027745/ami-name",
+            "ImageType": "machine",
+            "Public": false,
+            "OwnerId": "999225027745",
+            "PlatformDetails": "Linux/UNIX",
+            "UsageOperation": "RunInstances",
+            "State": "available",
+            "BlockDeviceMappings": [
+                {
+                    "DeviceName": "/dev/sda1",
+                    "Ebs": {
+                        "DeleteOnTermination": true,
+                        "SnapshotId": "snap-07e3508a94b1c8150",
+                        "VolumeSize": 8,
+                        "VolumeType": "gp3",
+                        "Encrypted": false
+                    }
+                },
+                {
+                    "DeviceName": "/dev/sdb",
+                    "VirtualName": "ephemeral0"
+                },
+                {
+                    "DeviceName": "/dev/sdc",
+                    "VirtualName": "ephemeral1"
+                }
+            ],
+            "Description": "libvirt copied image.",
+            "EnaSupport": true,
+            "Hypervisor": "xen",
+            "Name": "ami-name",
+            "RootDeviceName": "/dev/sda1",
+            "RootDeviceType": "ebs",
+            "SriovNetSupport": "simple",
+            "VirtualizationType": "hvm",
+            "BootMode": "uefi-preferred",
+            "ImdsSupport": "v2.0",
+            "DeregistrationProtection": "disabled",
+            "LastLaunchedTime": "2024-09-17T20:17:44Z"
+        }
+    ]
+}
