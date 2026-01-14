@@ -1,0 +1,13 @@
+---
+# Consul server configuration
+consul_server: true
+consul_bootstrap_expect: 3
+consul_ui_enabled: true
+
+# Vault server configuration
+vault_server: true
+
+# Nomad server configuration
+nomad_server: true
+nomad_client: false
+nomad_bootstrap_expect: 3

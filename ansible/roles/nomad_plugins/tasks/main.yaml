@@ -1,0 +1,51 @@
+---
+- name: Create Nomad plugin directory
+  file:
+    path: "{{ nomad_plugin_dir }}"
+    state: directory
+    owner: nomad
+    group: nomad
+    mode: '0755'
+  become: true
+
+- name: Create VM image directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+  loop: "{{ nomad_virt_image_paths }}"
+
+- name: Download nomad-driver-virt
+  unarchive:
+    src: "{{ nomad_driver_virt_url }}"
+    dest: "{{ nomad_plugin_dir }}"
+    remote_src: yes
+    owner: nomad
+    group: nomad
+    mode: '0755'
+  become: true
+  notify: Restart Nomad
+
+- name: Download nomad-driver-exec2
+  unarchive:
+    src: "{{ nomad_driver_exec2_url }}"
+    dest: "{{ nomad_plugin_dir }}"
+    remote_src: yes
+    owner: nomad
+    group: nomad
+    mode: '0755'
+  become: true
+  notify: Restart Nomad
+
+- name: Deploy Nomad plugin configuration
+  template:
+    src: "plugins.hcl.j2"
+    dest: "/etc/nomad.d/plugins.hcl"
+    owner: nomad
+    group: nomad
+    mode: '0640'
+  become: true
+  notify: Restart Nomad

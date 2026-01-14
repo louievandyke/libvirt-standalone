@@ -1,0 +1,34 @@
+data_dir   = "{{ nomad_data_dir }}"
+bind_addr  = "0.0.0.0"
+log_level  = "{{ nomad_log_level }}"
+plugin_dir = "{{ nomad_plugin_dir }}"
+
+{% if nomad_server %}
+server {
+  enabled          = true
+  bootstrap_expect = {{ nomad_bootstrap_expect }}
+}
+{% endif %}
+
+{% if nomad_client %}
+client {
+  enabled    = true
+  node_class = "{{ nomad_node_class }}"
+
+  options {
+    "driver.raw_exec.enable"    = "{{ nomad_raw_exec_enabled | string | lower }}"
+    "docker.privileged.enabled" = "{{ nomad_docker_privileged | string | lower }}"
+  }
+}
+{% endif %}
+
+consul {
+  address = "{{ nomad_consul_address }}"
+}
+
+{% if nomad_vault_enabled %}
+vault {
+  enabled = true
+  address = "{{ nomad_vault_address }}"
+}
+{% endif %}

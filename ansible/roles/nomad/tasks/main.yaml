@@ -1,0 +1,40 @@
+---
+- name: Install Nomad
+  apt:
+    name: "nomad={{ nomad_version }}*"
+    state: present
+  become: true
+
+- name: Create Nomad directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: nomad
+    group: nomad
+    mode: '0755'
+  become: true
+  loop:
+    - "{{ nomad_data_dir }}"
+    - "{{ nomad_plugin_dir }}"
+
+- name: Deploy Nomad configuration
+  template:
+    src: "nomad.hcl.j2"
+    dest: "{{ nomad_config_dir }}/nomad.hcl"
+    owner: nomad
+    group: nomad
+    mode: '0640'
+  become: true
+  notify: Restart Nomad
+
+- name: Enable Nomad service
+  systemd:
+    name: nomad
+    enabled: yes
+  become: true
+
+- name: Start Nomad service
+  systemd:
+    name: nomad
+    state: started
+  become: true

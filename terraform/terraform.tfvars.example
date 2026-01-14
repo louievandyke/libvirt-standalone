@@ -1,0 +1,100 @@
+# =============================================================================
+# Required Variables
+# =============================================================================
+
+stack_owner = "your-name"
+
+# AMI IDs - Use Ubuntu 22.04 LTS
+# Find latest: aws ec2 describe-images --owners 099720109477 --filters "Name=name,Values=ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*" --query 'sort_by(Images, &CreationDate)[-1].ImageId'
+server_ami_id = "ami-0b5a464cf5f40b28a"
+client_ami_id = "ami-0b5a464cf5f40b28a"
+
+# =============================================================================
+# General Configuration
+# =============================================================================
+
+stack_name = "libvirt"
+region     = "us-west-1"
+
+availability_zones = [
+  "us-west-1a",
+  "us-west-1b"
+]
+
+# =============================================================================
+# Server Configuration (Nomad/Consul/Vault)
+# =============================================================================
+
+# Number of servers: 1 (dev), 3 (standard HA), 5 (high availability)
+server_count         = 3
+server_instance_type = "t3.medium"
+server_root_volume_size = 50
+
+# =============================================================================
+# Client Configuration (Nomad clients with libvirt)
+# =============================================================================
+
+# Instance type options:
+#   "t3.medium"  - Cheap (~$0.04/hr) for infra testing, NO nested virtualization
+#   "t3.large"   - Cheap (~$0.08/hr) for infra testing, NO nested virtualization
+#   "c5.metal"   - Metal (~$4.08/hr) for VM workloads, supports nested virt
+#   "i3.metal"   - Metal (~$4.99/hr) for VM workloads + NVMe storage
+#
+# Use t3.* for infrastructure testing, switch to *.metal when running VMs
+client_instance_type    = "t3.medium"
+client_min_count        = 1
+client_max_count        = 5
+client_desired_count    = 1
+client_root_volume_size = 50
+client_node_class       = "libvirt"
+
+# =============================================================================
+# Router Configuration (optional bastion)
+# =============================================================================
+
+enable_router        = true
+router_instance_type = "t3.small"
+
+# =============================================================================
+# Network Configuration
+# =============================================================================
+
+# Set to true to create a new VPC, false to use default VPC
+create_vpc = false
+vpc_cidr   = "10.0.0.0/16"
+
+# Restrict access to specific IPs for security
+# Example: ["203.0.113.0/24", "198.51.100.50/32"]
+allowlist_ip = ["0.0.0.0/0"]
+
+# =============================================================================
+# SSH Configuration
+# =============================================================================
+
+# Leave empty to auto-generate a key pair
+ssh_key_name = ""
+
+# =============================================================================
+# HashiCorp Versions
+# =============================================================================
+
+consul_version            = "1.18.1"
+vault_version             = "1.18.0"
+nomad_version             = "1.9.0"
+nomad_driver_virt_version = "0.0.1-beta.1"
+nomad_driver_exec2_version = "0.1.0-beta.2"
+
+# =============================================================================
+# Ansible User
+# =============================================================================
+
+ansible_user = "ubuntu"
+
+# =============================================================================
+# Tags
+# =============================================================================
+
+tags = {
+  Project     = "nomad-libvirt-testing"
+  Environment = "dev"
+}

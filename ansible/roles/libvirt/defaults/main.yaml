@@ -1,0 +1,10 @@
+---
+libvirt_packages:
+  - qemu-kvm
+  - libvirt-daemon-system
+  - libvirt-clients
+  - bridge-utils
+  - virtinst
+  - libvirt-dev
+
+libvirt_users: []

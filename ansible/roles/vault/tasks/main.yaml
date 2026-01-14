@@ -1,0 +1,37 @@
+---
+- name: Install Vault
+  apt:
+    name: "vault={{ vault_version }}*"
+    state: present
+  become: true
+
+- name: Create Vault data directory
+  file:
+    path: "{{ vault_data_dir }}"
+    state: directory
+    owner: vault
+    group: vault
+    mode: '0755'
+  become: true
+
+- name: Deploy Vault configuration
+  template:
+    src: "vault.hcl.j2"
+    dest: "{{ vault_config_dir }}/vault.hcl"
+    owner: vault
+    group: vault
+    mode: '0640'
+  become: true
+  notify: Restart Vault
+
+- name: Enable Vault service
+  systemd:
+    name: vault
+    enabled: yes
+  become: true
+
+- name: Start Vault service
+  systemd:
+    name: vault
+    state: started
+  become: true

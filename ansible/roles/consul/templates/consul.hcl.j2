@@ -1,0 +1,24 @@
+data_dir = "{{ consul_data_dir }}"
+client_addr = "0.0.0.0"
+bind_addr = "{{ ansible_default_ipv4.address }}"
+
+{% if consul_server %}
+server = true
+bootstrap_expect = {{ consul_bootstrap_expect }}
+{% else %}
+server = false
+{% endif %}
+
+retry_join = ["{{ consul_retry_join }}"]
+
+{% if consul_ui_enabled and consul_server %}
+ui_config {
+  enabled = true
+}
+{% endif %}
+
+{% if consul_connect_enabled %}
+connect {
+  enabled = true
+}
+{% endif %}

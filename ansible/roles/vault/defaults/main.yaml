@@ -1,0 +1,16 @@
+---
+vault_version: "1.18.0"
+vault_config_dir: "/etc/vault.d"
+vault_data_dir: "/opt/vault/data"
+
+# Storage backend
+vault_storage_backend: "consul"
+vault_consul_address: "127.0.0.1:8500"
+vault_consul_path: "vault/"
+
+# Listener
+vault_listener_address: "0.0.0.0:8200"
+vault_tls_disable: true
+
+# UI
+vault_ui_enabled: true

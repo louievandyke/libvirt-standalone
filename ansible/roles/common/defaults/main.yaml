@@ -1,0 +1,12 @@
+---
+common_packages:
+  - curl
+  - wget
+  - unzip
+  - jq
+  - tmux
+  - tree
+  - htop
+  - vim
+
+common_timezone: UTC

@@ -1,0 +1,5 @@
+---
+# Master playbook - runs all configurations
+- import_playbook: servers.yaml
+- import_playbook: clients.yaml
+- import_playbook: router.yaml

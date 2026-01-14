@@ -1,0 +1,25 @@
+---
+nomad_version: "1.9.0"
+nomad_data_dir: "/opt/nomad/data"
+nomad_config_dir: "/etc/nomad.d"
+nomad_plugin_dir: "/opt/nomad/plugins"
+nomad_log_level: "INFO"
+
+# Server configuration
+nomad_server: false
+nomad_bootstrap_expect: 3
+
+# Client configuration
+nomad_client: true
+nomad_node_class: "default"
+
+# Driver options
+nomad_raw_exec_enabled: true
+nomad_docker_privileged: true
+
+# Consul integration
+nomad_consul_address: "127.0.0.1:8500"
+
+# Vault integration
+nomad_vault_enabled: true
+nomad_vault_address: "http://active.vault.service.consul:8200"

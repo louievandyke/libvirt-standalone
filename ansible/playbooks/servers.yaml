@@ -1,0 +1,11 @@
+---
+- name: Configure Nomad Servers
+  hosts: servers
+  become: true
+
+  roles:
+    - common
+    - hashicorp_repo
+    - consul
+    - vault
+    - nomad

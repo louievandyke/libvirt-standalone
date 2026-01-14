@@ -1,0 +1,23 @@
+---
+# Consul client configuration
+consul_server: false
+
+# Nomad client configuration
+nomad_server: false
+nomad_client: true
+nomad_node_class: libvirt
+nomad_raw_exec_enabled: true
+nomad_docker_privileged: true
+
+# Nomad plugins
+nomad_virt_image_paths:
+  - "/var/local/statics/images/"
+
+# Docker configuration
+docker_users:
+  - ubuntu
+
+# Libvirt configuration
+libvirt_users:
+  - ubuntu
+  - nomad

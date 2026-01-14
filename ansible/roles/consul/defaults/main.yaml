@@ -1,0 +1,18 @@
+---
+consul_version: "1.18.1"
+consul_data_dir: "/opt/consul/data"
+consul_config_dir: "/etc/consul.d"
+
+# Server configuration
+consul_server: false
+consul_bootstrap_expect: 3
+
+# Auto-join configuration
+consul_retry_join: "provider=aws tag_key=ConsulAutoJoin tag_value={{ consul_auto_join_tag }}"
+consul_auto_join_tag: "{{ stack_name }}"
+
+# UI
+consul_ui_enabled: true
+
+# Connect
+consul_connect_enabled: true

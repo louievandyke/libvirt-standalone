@@ -1,0 +1,37 @@
+---
+- name: Install libvirt packages
+  apt:
+    name: "{{ libvirt_packages }}"
+    state: present
+    update_cache: yes
+  become: true
+
+- name: Add users to libvirt group
+  user:
+    name: "{{ item }}"
+    groups: libvirt,kvm
+    append: yes
+  become: true
+  loop: "{{ libvirt_users }}"
+  when: libvirt_users | length > 0
+
+- name: Enable libvirtd service
+  systemd:
+    name: libvirtd
+    enabled: yes
+    state: started
+  become: true
+
+- name: Ensure default network is active
+  command: virsh net-start default
+  become: true
+  register: net_start
+  failed_when: false
+  changed_when: net_start.rc == 0
+
+- name: Set default network to autostart
+  command: virsh net-autostart default
+  become: true
+  register: net_autostart
+  failed_when: false
+  changed_when: net_autostart.rc == 0

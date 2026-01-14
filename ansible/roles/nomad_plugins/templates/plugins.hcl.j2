@@ -1,0 +1,12 @@
+plugin "nomad-driver-virt" {
+  config {
+    image_paths = {{ nomad_virt_image_paths | to_json }}
+  }
+}
+
+plugin "nomad-driver-exec2" {
+  config {
+    unveil_defaults = true
+    unveil_by_task  = true
+  }
+}

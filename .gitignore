@@ -1,0 +1,36 @@
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/*.tfplan
+terraform/tfplan
+terraform/keys/
+terraform/terraform.tfvars
+
+# Ansible
+ansible/.ansible/
+ansible/inventory/*.py
+*.retry
+
+# Packer
+packer/packer_cache/
+packer/*.box
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+*.pem
+*.key
+*.crt
+credentials.json
+secrets.yaml

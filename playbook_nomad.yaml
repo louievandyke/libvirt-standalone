@@ -1,3 +1,0 @@
-- hosts: libvirt
-  roles:
-    - role: ../../shared/ansible/roles/nomad

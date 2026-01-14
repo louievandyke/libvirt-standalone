@@ -1,0 +1,13 @@
+---
+- name: Configure Nomad Clients
+  hosts: clients
+  become: true
+
+  roles:
+    - common
+    - hashicorp_repo
+    - consul
+    - nomad
+    - nomad_plugins
+    - docker
+    - libvirt

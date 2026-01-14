@@ -1,0 +1,28 @@
+---
+plugin: amazon.aws.aws_ec2
+
+regions:
+  - us-west-1
+
+filters:
+  instance-state-name: running
+  "tag:StackName": "libvirt"
+
+keyed_groups:
+  - key: tags.AnsibleGroup
+    prefix: ""
+    separator: ""
+
+groups:
+  servers: "'servers' in (tags.AnsibleGroup | default(''))"
+  clients: "'clients' in (tags.AnsibleGroup | default(''))"
+  router: "'router' in (tags.AnsibleGroup | default(''))"
+
+hostnames:
+  - tag:Name
+  - instance-id
+
+compose:
+  ansible_host: public_ip_address | default(private_ip_address)
+  ansible_user: tags.AnsibleUser | default('ubuntu')
+  private_ip: private_ip_address

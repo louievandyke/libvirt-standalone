@@ -1,0 +1,17 @@
+---
+# Stack configuration
+stack_name: libvirt
+
+# HashiCorp versions
+consul_version: "1.18.1"
+vault_version: "1.18.0"
+nomad_version: "1.9.0"
+nomad_driver_virt_version: "0.0.1-beta.1"
+nomad_driver_exec2_version: "0.1.0-beta.2"
+
+# Consul auto-join
+consul_auto_join_tag: "{{ stack_name }}"
+consul_retry_join: "provider=aws tag_key=ConsulAutoJoin tag_value={{ consul_auto_join_tag }}"
+
+# Common settings
+common_timezone: UTC

@@ -1,0 +1,14 @@
+---
+- name: Configure Router
+  hosts: router
+  become: true
+
+  roles:
+    - common
+
+  tasks:
+    - name: Install SSH tools
+      apt:
+        name:
+          - openssh-client
+        state: present

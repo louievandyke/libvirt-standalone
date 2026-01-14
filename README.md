@@ -1,70 +1,183 @@
 # Libvirt Standalone
-The `libvirt-standalone` AWS lab provides the base infrastructure and configuration management for
-developing and testing the [`nomad-driver-virt`][] task driver. It builds a `libvirt` instance that
-supports running virtual machines via [libvirt][] and a `router` instance which can act as an
-external VM jumpbox.
 
-## Getting Started
-To run this lab you needs the following tools installed in your machine:
-* [Terraform][terraform_install]
-* [Ansible][ansible_install]
+AWS lab infrastructure for developing and testing the [`nomad-driver-virt`][] task driver. This project provides a scalable HashiStack deployment with:
 
-The project also needs an AWS account where the infrastructure will be built and run. The resources
-used have a non-trivial monetary cost associated.
+- **Nomad Server Cluster:** 1, 3, or 5 node HA cluster
+- **Nomad Clients:** ASG-based horizontal scaling (i3.metal for libvirt)
+- **Consul:** Service discovery and auto-join
+- **Vault:** Secrets management
+- **Configuration:** Fully Ansible-managed
 
-### Provision Infrastructure
-You will initially need to update the [Terraform local variables][lab_tf_locals] with the
-[main.tf](./main.tf) file, so that they suit your requirements. 
+## Prerequisites
 
-Once customizations have been made, Terraform can be used to build the infrastructure resources.
-```console
+- [Terraform][] >= 1.0
+- [Ansible][] >= 2.12
+- [AWS CLI][] configured with credentials
+- An AWS account (resources have non-trivial costs, especially i3.metal instances)
+
+## Quick Start
+
+### 1. Configure Variables
+
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your settings
+```
+
+Key variables to configure:
+- `stack_owner` - Your name for resource tagging
+- `server_ami_id` / `client_ami_id` - Ubuntu 22.04 AMI IDs
+- `server_count` - Number of servers (1, 3, or 5)
+- `client_desired_count` - Initial number of clients
+
+### 2. Deploy
+
+```bash
+./scripts/deploy.sh
+```
+
+Or step-by-step:
+```bash
+cd terraform
 terraform init
-terraform plan
-terraform apply --auto-approve
+terraform apply
+
+cd ../ansible
+ansible-galaxy collection install -r requirements.yaml
+ansible-playbook playbooks/site.yaml
 ```
 
-### Bootstrap Infrastructure
-You will likely need to modify the [libvirt playbook](./playbook_libvirt.yaml) and in particular
-`helper-*` parameters which can be used to sync a local copy of the driver code to the instance. It
-can be removed or commented out if you plan to use an official release build.
+### 3. Access the Cluster
 
-Once customizations have been made, Ansible can be used to bootstrap the infrastructure resources.
-```console
-ansible-playbook -i inventory.yaml playbook_all.yaml
+After deployment, Terraform outputs connection information:
+```bash
+cd terraform
+terraform output ssh_info
+terraform output nomad_ui
 ```
 
-### Misc
-The bootstrapping process does not currently install Nomad or the `nomad-driver-virt` task driver,
-so you will need to add these. The following script can be used to quickly install Nomad:
-```sh
-function install() {
-  wget https://releases.hashicorp.com/nomad/1.8.4/nomad_1.8.4_linux_amd64.zip
-  unzip nomad_1.8.4_linux_amd64.zip
-  mv nomad /usr/local/bin
-}  
+## Project Structure
+
+```
+.
+├── terraform/              # Infrastructure as Code
+│   ├── main.tf            # Root module
+│   ├── variables.tf       # Configurable variables
+│   ├── outputs.tf         # Stack outputs
+│   └── modules/           # Terraform modules
+│       ├── network/       # VPC, subnets, security groups
+│       ├── iam/           # IAM roles and policies
+│       ├── servers/       # Nomad server instances
+│       ├── clients/       # Client ASG
+│       └── router/        # Optional bastion
+│
+├── ansible/               # Configuration management
+│   ├── playbooks/         # Playbooks
+│   ├── roles/             # Ansible roles
+│   ├── inventory/         # Dynamic inventory
+│   └── group_vars/        # Group variables
+│
+├── packer/                # AMI builders
+├── scripts/               # Helper scripts
+├── jobs/                  # Sample Nomad jobs
+└── README.md
 ```
 
-The Nomad agent will need a configuration and specific attention paid to the interface binding to
-ensure VM IP addresses are routable. The following template can be used and amended where
-indicated:
-```hcl
-plugin_dir = "<PATH>"
-bind_addr  = "<PRIVATE_IP>"
+## Scaling Clients
 
-advertise {
-  http = "<PRIVATE_IP>"
-  rpc  = "<PRIVATE_IP>"
-  serf = "<PRIVATE_IP>"
-}
-
-client {
-  network_interface = "<PRIVATE_INTERFACE>"
-  servers           = [""<PRIVATE_IP>":4647"]
-}
+Scale the client ASG:
+```bash
+./scripts/scale-clients.sh 3  # Scale to 3 clients
+./scripts/scale-clients.sh 1  # Scale down to 1
 ```
 
-[`nomad-driver-virt`]: https://github.com/hashicorp/nomad-driver-virt?tab=readme-ov-file#nomad-virt-driver
+Or directly via AWS CLI:
+```bash
+aws autoscaling set-desired-capacity \
+    --auto-scaling-group-name libvirt-clients \
+    --desired-capacity 3
+```
+
+## Configuration Options
+
+### Server Cluster Sizes
+
+| Count | Use Case |
+|-------|----------|
+| 1 | Development/testing |
+| 3 | Standard HA (recommended) |
+| 5 | High availability |
+
+### Instance Types
+
+| Component | Default | Notes |
+|-----------|---------|-------|
+| Servers | t3.medium | Consul/Vault/Nomad servers |
+| Clients | i3.metal | Required for nested virtualization |
+| Router | t3.small | Optional bastion host |
+
+## Running VM Workloads
+
+Example Nomad job using the virt driver:
+```bash
+nomad job run jobs/python-server.hcl
+```
+
+See `jobs/` directory for sample job specifications.
+
+## Destroying
+
+```bash
+./scripts/destroy.sh
+```
+
+Or:
+```bash
+cd terraform
+terraform destroy
+```
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        AWS VPC                               │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │              Security Groups                          │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                              │
+│  ┌─────────────────┐  ┌─────────────────────────────────┐   │
+│  │  Nomad Servers  │  │        Nomad Clients (ASG)       │   │
+│  │  (1/3/5 nodes)  │  │                                  │   │
+│  │                 │  │  ┌───────┐ ┌───────┐ ┌───────┐  │   │
+│  │  • Consul       │  │  │Client │ │Client │ │Client │  │   │
+│  │  • Vault        │  │  │  1    │ │  2    │ │  N    │  │   │
+│  │  • Nomad        │  │  │       │ │       │ │       │  │   │
+│  │                 │  │  │libvirt│ │libvirt│ │libvirt│  │   │
+│  └─────────────────┘  │  └───────┘ └───────┘ └───────┘  │   │
+│                       └─────────────────────────────────┘   │
+│                                                              │
+│  ┌─────────────────┐                                        │
+│  │ Router (opt.)   │                                        │
+│  └─────────────────┘                                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Links
+
+- [nomad-driver-virt][]
+- [libvirt][]
+- [Nomad Documentation][]
+- [Consul Documentation][]
+
+[`nomad-driver-virt`]: https://github.com/hashicorp/nomad-driver-virt
+[nomad-driver-virt]: https://github.com/hashicorp/nomad-driver-virt
 [libvirt]: https://libvirt.org/
-[ansible_install]: https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#selecting-an-ansible-package-and-version-to-install
-[terraform_install]: https://developer.hashicorp.com/terraform/install
-[lab_tf_locals]: https://github.com/jrasell/dev-mess/blob/332727a714c3fe396796e8c0a5df60a83d010681/nomad/lab/aws/libvirt-standalone/main.tf#L1-L18
+[Terraform]: https://developer.hashicorp.com/terraform/install
+[Ansible]: https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html
+[AWS CLI]: https://aws.amazon.com/cli/
+[Nomad Documentation]: https://developer.hashicorp.com/nomad/docs
+[Consul Documentation]: https://developer.hashicorp.com/consul/docs
