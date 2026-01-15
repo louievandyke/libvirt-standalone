@@ -114,8 +114,8 @@ resource "aws_lb_target_group" "vault" {
     unhealthy_threshold = 2
     timeout             = 5
     interval            = 30
-    path                = "/v1/sys/health"
-    matcher             = "200,429,472,473,501,503" # Vault returns various codes depending on state
+    path                = "/v1/sys/health?standbyok=true&uninitcode=200&sealedcode=200"
+    matcher             = "200"
   }
 
   tags = merge(var.tags, {

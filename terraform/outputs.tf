@@ -19,6 +19,7 @@ output "cluster_info" {
 output "your_ip" {
   description = "Your detected IP address (used for allowlist)"
   value       = "${module.my_ip_address.stdout}/32"
+  sensitive   = true
 }
 
 # =============================================================================

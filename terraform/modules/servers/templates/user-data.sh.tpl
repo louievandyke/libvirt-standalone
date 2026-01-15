@@ -11,9 +11,6 @@ NOMAD_VERSION="${nomad_version}"
 # Disable interactive prompts
 export DEBIAN_FRONTEND=noninteractive
 
-# Wait for cloud-init to complete
-cloud-init status --wait
-
 # Get instance metadata
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 IP_ADDRESS=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)

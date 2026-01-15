@@ -12,9 +12,6 @@ NODE_CLASS="${node_class}"
 # Disable interactive prompts
 export DEBIAN_FRONTEND=noninteractive
 
-# Wait for cloud-init to complete
-cloud-init status --wait
-
 # Get instance metadata
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 IP_ADDRESS=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
@@ -66,6 +63,10 @@ rm /tmp/nomad-driver-virt.zip
 wget -q -O /tmp/nomad-driver-exec2.zip "https://releases.hashicorp.com/nomad-driver-exec2/$${NOMAD_DRIVER_EXEC2_VERSION}/nomad-driver-exec2_$${NOMAD_DRIVER_EXEC2_VERSION}_linux_amd64.zip"
 unzip -o /tmp/nomad-driver-exec2.zip -d $${NOMAD_PLUGIN_DIR}
 rm /tmp/nomad-driver-exec2.zip
+
+# Remove non-binary files from plugins directory (LICENSE.txt etc)
+find $${NOMAD_PLUGIN_DIR} -type f ! -executable -delete 2>/dev/null || true
+rm -f $${NOMAD_PLUGIN_DIR}/*.txt 2>/dev/null || true
 
 chown -R nomad:nomad $${NOMAD_PLUGIN_DIR}
 chmod 755 $${NOMAD_PLUGIN_DIR}/*
