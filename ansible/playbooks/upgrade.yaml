@@ -1,0 +1,135 @@
+---
+# Rolling upgrade playbook
+# Usage: ansible-playbook -i inventory/aws_ec2.yaml playbooks/upgrade.yaml
+#
+# Update versions in group_vars/all.yaml before running:
+#   consul_version: "1.19.0"
+#   vault_version: "1.19.0"
+#   nomad_version: "1.10.0"
+
+- name: Upgrade Servers (one at a time)
+  hosts: servers
+  serial: 1
+  become: true
+
+  tasks:
+    - name: Upgrade Consul
+      apt:
+        name: "consul={{ consul_version }}*"
+        state: latest
+        update_cache: yes
+      notify: Restart Consul
+
+    - name: Upgrade Vault
+      apt:
+        name: "vault={{ vault_version }}*"
+        state: latest
+      notify: Restart Vault
+
+    - name: Upgrade Nomad
+      apt:
+        name: "nomad={{ nomad_version }}*"
+        state: latest
+      notify: Restart Nomad
+
+    - name: Wait for services to stabilize
+      pause:
+        seconds: 30
+
+  handlers:
+    - name: Restart Consul
+      systemd:
+        name: consul
+        state: restarted
+
+    - name: Restart Vault
+      systemd:
+        name: vault
+        state: restarted
+
+    - name: Restart Nomad
+      systemd:
+        name: nomad
+        state: restarted
+
+
+- name: Upgrade Clients (drain, upgrade, re-enable)
+  hosts: clients
+  serial: 1
+  become: true
+
+  tasks:
+    - name: Get node ID
+      command: nomad node status -self -json
+      register: node_status
+      changed_when: false
+
+    - name: Set node ID fact
+      set_fact:
+        nomad_node_id: "{{ (node_status.stdout | from_json).ID }}"
+
+    - name: Drain node
+      command: "nomad node drain -enable -deadline 5m -yes {{ nomad_node_id }}"
+      delegate_to: "{{ groups['servers'][0] }}"
+      become: false
+
+    - name: Wait for drain to complete
+      command: "nomad node status -json {{ nomad_node_id }}"
+      delegate_to: "{{ groups['servers'][0] }}"
+      become: false
+      register: drain_status
+      until: (drain_status.stdout | from_json).Drain == false or (drain_status.stdout | from_json).SchedulingEligibility == "ineligible"
+      retries: 30
+      delay: 10
+      changed_when: false
+
+    - name: Upgrade Consul
+      apt:
+        name: "consul={{ consul_version }}*"
+        state: latest
+        update_cache: yes
+      notify: Restart Consul
+
+    - name: Upgrade Nomad
+      apt:
+        name: "nomad={{ nomad_version }}*"
+        state: latest
+      notify: Restart Nomad
+
+    - name: Upgrade Nomad plugins
+      include_role:
+        name: nomad_plugins
+      vars:
+        nomad_plugins_force_upgrade: true
+
+    - name: Flush handlers
+      meta: flush_handlers
+
+    - name: Wait for Nomad to rejoin
+      pause:
+        seconds: 15
+
+    - name: Re-enable node scheduling
+      command: "nomad node drain -disable -yes {{ nomad_node_id }}"
+      delegate_to: "{{ groups['servers'][0] }}"
+      become: false
+
+    - name: Mark node eligible
+      command: "nomad node eligibility -enable {{ nomad_node_id }}"
+      delegate_to: "{{ groups['servers'][0] }}"
+      become: false
+
+    - name: Wait before next client
+      pause:
+        seconds: 30
+
+  handlers:
+    - name: Restart Consul
+      systemd:
+        name: consul
+        state: restarted
+
+    - name: Restart Nomad
+      systemd:
+        name: nomad
+        state: restarted

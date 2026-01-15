@@ -40,6 +40,11 @@
   become: true
   notify: Restart Nomad
 
+- name: Remove non-binary files from plugin directory (LICENSE.txt etc)
+  shell: "find {{ nomad_plugin_dir }} -type f ! -executable -delete 2>/dev/null; rm -f {{ nomad_plugin_dir }}/*.txt 2>/dev/null || true"
+  become: true
+  changed_when: false
+
 - name: Deploy Nomad plugin configuration
   template:
     src: "plugins.hcl.j2"
