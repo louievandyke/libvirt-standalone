@@ -2,6 +2,14 @@ provider "aws" {
   region = var.region
 }
 
+# Auto-detect current IP for allowlist
+module "my_ip_address" {
+  source  = "matti/resource/shell"
+  version = "1.5.0"
+
+  command = "curl -s https://ipinfo.io/ip"
+}
+
 locals {
   common_tags = merge(var.tags, {
     StackName  = var.stack_name
@@ -10,6 +18,9 @@ locals {
   })
 
   router_ami_id = var.router_ami_id != "" ? var.router_ami_id : var.server_ami_id
+
+  # Use auto-detected IP if allowlist_ip is default, otherwise use provided value
+  effective_allowlist = var.allowlist_ip == ["0.0.0.0/0"] ? ["${module.my_ip_address.stdout}/32"] : var.allowlist_ip
 }
 
 # Generate SSH key pair if not provided
@@ -34,7 +45,7 @@ module "network" {
   create_vpc         = var.create_vpc
   vpc_cidr           = var.vpc_cidr
   availability_zones = var.availability_zones
-  allowlist_ip       = var.allowlist_ip
+  allowlist_ip       = local.effective_allowlist
   tags               = local.common_tags
 }
 
@@ -105,4 +116,47 @@ module "router" {
   ssh_key_name       = local.ssh_key_name
   ansible_user       = var.ansible_user
   tags               = local.common_tags
+}
+
+# ALB for Nomad/Consul/Vault UI access
+module "alb" {
+  source = "./modules/alb"
+
+  stack_name          = var.stack_name
+  vpc_id              = module.network.vpc_id
+  subnet_ids          = module.network.subnet_ids
+  allowlist_ip        = local.effective_allowlist
+  server_instance_ids = module.servers.instance_ids
+  tags                = local.common_tags
+}
+
+# Allow ALB to reach servers
+resource "aws_security_group_rule" "alb_to_servers_nomad" {
+  type                     = "ingress"
+  from_port                = 4646
+  to_port                  = 4646
+  protocol                 = "tcp"
+  source_security_group_id = module.alb.alb_security_group_id
+  security_group_id        = module.network.server_security_group_id
+  description              = "Nomad from ALB"
+}
+
+resource "aws_security_group_rule" "alb_to_servers_consul" {
+  type                     = "ingress"
+  from_port                = 8500
+  to_port                  = 8500
+  protocol                 = "tcp"
+  source_security_group_id = module.alb.alb_security_group_id
+  security_group_id        = module.network.server_security_group_id
+  description              = "Consul from ALB"
+}
+
+resource "aws_security_group_rule" "alb_to_servers_vault" {
+  type                     = "ingress"
+  from_port                = 8200
+  to_port                  = 8200
+  protocol                 = "tcp"
+  source_security_group_id = module.alb.alb_security_group_id
+  security_group_id        = module.network.server_security_group_id
+  description              = "Vault from ALB"
 }

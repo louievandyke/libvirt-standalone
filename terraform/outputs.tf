@@ -16,6 +16,11 @@ output "cluster_info" {
   }
 }
 
+output "your_ip" {
+  description = "Your detected IP address (used for allowlist)"
+  value       = "${module.my_ip_address.stdout}/32"
+}
+
 # =============================================================================
 # SERVER OUTPUTS
 # =============================================================================
@@ -82,21 +87,46 @@ output "ssh_info" {
 }
 
 # =============================================================================
-# NOMAD UI
+# ALB OUTPUTS
+# =============================================================================
+
+output "alb_dns_name" {
+  description = "ALB DNS name"
+  value       = module.alb.alb_dns_name
+}
+
+# =============================================================================
+# UI URLs (via ALB)
 # =============================================================================
 
 output "nomad_ui" {
-  description = "Nomad UI URL"
-  value       = "http://${module.servers.public_ips[0]}:4646"
+  description = "Nomad UI URL (via ALB)"
+  value       = module.alb.nomad_url
 }
 
 output "consul_ui" {
-  description = "Consul UI URL"
-  value       = "http://${module.servers.public_ips[0]}:8500"
+  description = "Consul UI URL (via ALB)"
+  value       = module.alb.consul_url
 }
 
 output "vault_ui" {
-  description = "Vault UI URL"
+  description = "Vault UI URL (via ALB)"
+  value       = module.alb.vault_url
+}
+
+# Direct server access (backup)
+output "nomad_ui_direct" {
+  description = "Nomad UI URL (direct to server)"
+  value       = "http://${module.servers.public_ips[0]}:4646"
+}
+
+output "consul_ui_direct" {
+  description = "Consul UI URL (direct to server)"
+  value       = "http://${module.servers.public_ips[0]}:8500"
+}
+
+output "vault_ui_direct" {
+  description = "Vault UI URL (direct to server)"
   value       = "http://${module.servers.public_ips[0]}:8200"
 }
 
