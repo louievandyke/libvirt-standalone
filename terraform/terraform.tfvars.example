@@ -33,14 +33,20 @@ server_root_volume_size = 50
 # =============================================================================
 # Client Configuration (Nomad clients with libvirt)
 # =============================================================================
-
-# Instance type options:
-#   "t3.medium"  - Cheap (~$0.04/hr) for infra testing, NO nested virtualization
-#   "t3.large"   - Cheap (~$0.08/hr) for infra testing, NO nested virtualization
-#   "c5.metal"   - Metal (~$4.08/hr) for VM workloads, supports nested virt
-#   "i3.metal"   - Metal (~$4.99/hr) for VM workloads + NVMe storage
 #
-# Use t3.* for infrastructure testing, switch to *.metal when running VMs
+# INSTANCE TYPE TOGGLE:
+# ┌─────────────────┬──────────┬─────────────────────────────────────────────┐
+# │ Type            │ Cost/hr  │ Use Case                                    │
+# ├─────────────────┼──────────┼─────────────────────────────────────────────┤
+# │ t3.medium       │ ~$0.04   │ Infra testing (Docker, exec2) - NO KVM      │
+# │ t3.large        │ ~$0.08   │ Infra testing (more RAM) - NO KVM           │
+# │ c5.metal        │ ~$4.08   │ VM testing with virt driver - HAS KVM       │
+# │ i3.metal        │ ~$4.99   │ VM testing + NVMe storage - HAS KVM         │
+# └─────────────────┴──────────┴─────────────────────────────────────────────┘
+#
+# The nomad-driver-virt requires bare metal instances for KVM acceleration.
+# Use t3.* for cheap infrastructure testing, switch to *.metal for VM workloads.
+#
 client_instance_type    = "t3.medium"
 client_min_count        = 1
 client_max_count        = 5
