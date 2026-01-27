@@ -1,0 +1,9 @@
+# Build output
+bin/
+
+# Config file (contains local paths)
+chaos.yaml
+
+# Test coverage
+coverage.out
+coverage.html

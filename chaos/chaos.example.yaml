@@ -1,0 +1,29 @@
+# Chaos Lab Configuration
+# Copy this file to chaos.yaml and customize for your environment
+
+cluster:
+  name: "libvirt-test"
+
+discovery:
+  method: "terraform"
+  terraform:
+    # Path to terraform directory (relative to this config file)
+    working_dir: "../terraform"
+
+ssh:
+  user: "ubuntu"
+  # Path to SSH key (relative to this config file)
+  key_path: "../terraform/keys/libvirt-test.pem"
+  port: 22
+  connect_timeout: 10  # seconds
+
+# Optional: Override Nomad API address
+# By default, chaos will connect to each discovered node
+nomad:
+  # address: "http://localhost:4646"
+  # token: ""
+
+# Optional: Consul configuration (for future use)
+consul:
+  # address: "http://localhost:8500"
+  # token: ""

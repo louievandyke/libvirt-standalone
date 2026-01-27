@@ -1,0 +1,48 @@
+name: leader-failover
+description: Test Nomad cluster recovery after leader failure
+tags:
+  - raft
+  - leader
+  - recovery
+timeout: 2m
+
+steps:
+  - name: Verify cluster healthy before test
+    assert: nomad-api-healthy
+    args:
+      timeout: 10s
+
+  - name: Verify leader exists
+    assert: leader-elected
+    args:
+      within: 5s
+
+  - name: Kill the Nomad leader
+    action: kill-leader
+    args:
+      signal: TERM
+
+  - name: Wait for leader election
+    wait: 3s
+
+  - name: Verify new leader elected
+    assert: leader-elected
+    args:
+      within: 15s
+    retries: 3
+
+  - name: Verify cluster API healthy after failover
+    assert: nomad-api-healthy
+    args:
+      timeout: 10s
+    retries: 2
+
+cleanup:
+  - name: Ensure killed node is restarted
+    action: kill-leader
+    on_error: continue
+    # The rollback will restart the nomad service
+
+metadata:
+  author: chaos-lab
+  version: "1.0"
