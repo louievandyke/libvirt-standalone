@@ -37,11 +37,9 @@ steps:
       timeout: 10s
     retries: 2
 
-cleanup:
-  - name: Ensure killed node is restarted
-    action: kill-leader
-    on_error: continue
-    # The rollback will restart the nomad service
+cleanup: []
+  # Rollback is handled automatically — the runner calls Rollback() on all
+  # executed actions in reverse order, which restarts the stopped Nomad service.
 
 metadata:
   author: chaos-lab

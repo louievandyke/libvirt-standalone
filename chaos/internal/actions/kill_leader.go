@@ -50,19 +50,22 @@ func (a *KillLeaderAction) Execute(ctx context.Context, actx *driver.ActionConte
 	}
 	defer client.Close()
 
-	// Find and kill the nomad process
-	cmd := fmt.Sprintf("pkill -%s nomad", signal)
-	stdout, stderr, exitCode, err := client.RunWithSudo(ctx, cmd)
+	// Stop nomad via systemctl so systemd doesn't auto-restart it.
+	// Using pkill alone is insufficient because the systemd unit has
+	// Restart=on-failure with RestartSec=2, so the process comes back
+	// before assertions can observe the outage.
+	// When signal=KILL, send SIGKILL first for an unclean shutdown, then stop the unit.
+	if signal == "KILL" {
+		_, _, _, _ = client.RunWithSudo(ctx, "pkill -KILL nomad")
+	}
+	cmd := "systemctl stop nomad"
+	_, stderr, exitCode, err := client.RunWithSudo(ctx, cmd)
 	if err != nil {
-		return fmt.Errorf("executing kill command: %w", err)
+		return fmt.Errorf("executing stop command: %w", err)
 	}
 
-	// pkill returns 0 if processes were killed, 1 if no processes matched
-	if exitCode == 1 {
-		return fmt.Errorf("no nomad process found on %s", leader.Name)
-	}
 	if exitCode != 0 {
-		return fmt.Errorf("pkill failed (exit %d): stdout=%s stderr=%s", exitCode, stdout, stderr)
+		return fmt.Errorf("systemctl stop nomad failed (exit %d): %s", exitCode, stderr)
 	}
 
 	return nil
@@ -87,8 +90,8 @@ func (a *KillLeaderAction) Rollback(ctx context.Context, actx *driver.ActionCont
 	}
 	defer client.Close()
 
-	// Try to restart via systemd
-	_, stderr, exitCode, err := client.RunWithSudo(ctx, "systemctl restart nomad")
+	// Start the service back up (it was stopped, not just killed)
+	_, stderr, exitCode, err := client.RunWithSudo(ctx, "systemctl start nomad")
 	if err != nil {
 		return fmt.Errorf("executing restart: %w", err)
 	}
